@@ -112,6 +112,36 @@ ggplot(abs1_qc) +
 ggsave(plot = last_plot(), filename = paste0("DMSO_control1.jpeg"), device = "jpeg", path = "qc",
        width = 6, height = 3, units = "in", dpi = 320)
 
+plate1_A1 <- (r4[, c("absorbance.1.A01")])
+plate1_A2 <- (r4[, c("absorbance.1.A02")])
+plate1_N1 <- (r4[, c("absorbance.1.N01")])
+plate1_N2 <- (r4[, c("absorbance.1.N02")])
+
+A1_temp <- data.frame(plate1_A1)
+A1 <- A1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = A1)
+colnames(A1)[colnames(A1) == "A1"] <- "Absorbance"
+A2_temp <- data.frame(plate1_A2)
+A2 <- A2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = A2)
+colnames(A2)[colnames(A2) == "A2"] <- "Absorbance"
+N1_temp <- data.frame(plate1_N1)
+N1 <- N1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = N1)
+colnames(N1)[colnames(N1) == "N1"] <- "Absorbance"
+N2_temp <- data.frame(plate1_N2)
+N2 <- N2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = N2)
+colnames(N2)[colnames(N2) == "N2"] <- "Absorbance"
+control_comparison <- rbind(A1, A2, N1, N2)
+
+ggplot(control_comparison) + 
+  geom_line(aes(x = wavelength, y = Absorbance)) + xlim(350, 500) +
+  ggtitle("control comparison") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                                            panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  geom_vline(xintercept = 393, linetype = "dotted", color = "blue") +
+  geom_vline(xintercept = 418, linetype = "dotted") +
+  geom_vline(xintercept = 424, linetype = "dotted", color = "red")
+
+ggsave(plot = last_plot(), filename = paste0("control_comparison.jpeg"), device = "jpeg", path = "qc",
+       width = 6, height = 3, units = "in", dpi = 320)
+
 #qc plate 2
 dir.create("qc")
 baseline2_qc <- data.frame(baseline2)
@@ -144,6 +174,36 @@ ggplot(abs2_qc) +
   geom_vline(xintercept = 424, linetype = "dotted", color = "red")
 
 ggsave(plot = last_plot(), filename = paste0("DMSO_control2.jpeg"), device = "jpeg", path = "qc",
+       width = 6, height = 3, units = "in", dpi = 320)
+
+plate2_A1 <- (r4[, c("absorbance.2.A01")])
+plate2_A2 <- (r4[, c("absorbance.2.A02")])
+plate2_N1 <- (r4[, c("absorbance.2.N01")])
+plate2_N2 <- (r4[, c("absorbance.2.N02")])
+
+A1_temp <- data.frame(plate2_A1)
+A1 <- A1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = A1)
+colnames(A1)[colnames(A1) == "A1"] <- "Absorbance"
+A2_temp <- data.frame(plate2_A2)
+A2 <- A2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = A2)
+colnames(A2)[colnames(A2) == "A2"] <- "Absorbance"
+N1_temp <- data.frame(plate2_N1)
+N1 <- N1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = N1)
+colnames(N1)[colnames(N1) == "N1"] <- "Absorbance"
+N2_temp <- data.frame(plate2_N2)
+N2 <- N2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = N2)
+colnames(N2)[colnames(N2) == "N2"] <- "Absorbance"
+control_comparison_plate2 <- rbind(A1, A2, N1, N2)
+
+ggplot(control_comparison_plate2) + 
+  geom_line(aes(x = wavelength, y = Absorbance)) + xlim(350, 500) +
+  ggtitle("control comparison") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
+                                            panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+  geom_vline(xintercept = 393, linetype = "dotted", color = "blue") +
+  geom_vline(xintercept = 418, linetype = "dotted") +
+  geom_vline(xintercept = 424, linetype = "dotted", color = "red")
+
+ggsave(plot = last_plot(), filename = paste0("control_comparison_plate2.jpeg"), device = "jpeg", path = "qc",
        width = 6, height = 3, units = "in", dpi = 320)
 
 #edit script to account for as many plates as are present in the assay
