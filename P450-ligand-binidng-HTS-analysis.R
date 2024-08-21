@@ -300,7 +300,7 @@ for (i in 1:nrow(compound_key)) {
   compound_code <- strsplit(compound_key[i,1],"-")[[1]][1]
   # compound codes are the well ID for the master library - ensure no compounds codes loaded for secondary plates
   # must only use each compound code once
-
+  # the script is reading the titles of the columns - if the titles of the columns are changed in the csv file, ensure that they are properly reflected in the script
   compound_conc[[compound_key[i,1]]] <- c(subset(table_with_conc, `source.well` == compound_code )$`actual..ligand.`, 0)
 }
 
