@@ -5,6 +5,8 @@
 #  absorbance, prints absolute and difference spectra for each assay, and estimated dissociation constants and ∆Amax
 #  values for each assay based on the one-site, specific binding model.
 
+DOI: 10.1016/j.jbc.2024.107799
+
 
 
 
