@@ -1,6 +1,6 @@
 
 #     The following script was written to process spectral data obtained from a plate reader as referred to in 
-#  "Development of a high throughput cytochrome P450-ligand binding assay" published in XX. The script is equipped to 
+#  "Development of a high throughput cytochrome P450-ligand binding assay" published in JBC. The script is equipped to 
 #  analyze cytochrome P450 binding assay data from high throughput screens. The script corrects spectra for background
 #  absorbance, prints absolute and difference spectra for each assay, and estimated dissociation constants and ∆Amax
 #  values for each assay based on the one-site, specific binding model.
