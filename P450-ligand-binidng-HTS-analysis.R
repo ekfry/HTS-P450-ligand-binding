@@ -9,9 +9,8 @@
 # 1.	Frydendall, E., and Scott, E. E. (2024) Development of a high throughput cytochrome P450-ligand binding assay The Journal of biological chemistry 107799 10.1016/j.jbc.2024.107799 #
 
 
-############# if this is the first time opening R studio, install the packages below by deleting the '#' in lines 14-17 and running the script. 
+############# if this is the first time opening R studio, install the packages below by deleting the '#' in lines 15-18 and running the script. 
 ############# This only needs to be done the  first time the program is open on a computer. #############
-
 
 #install.packages("tidyverse")
 #install.packages("devtools")
