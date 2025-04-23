@@ -6,8 +6,11 @@
 #  values for each assay based on the one-site, specific binding model.
 
 # DOI: 10.1016/j.jbc.2024.107799
+# 1.	Frydendall, E., and Scott, E. E. (2024) Development of a high throughput cytochrome P450-ligand binding assay The Journal of biological chemistry 107799 10.1016/j.jbc.2024.107799 #
 
 
+############# if this is the first time opening R studio, install the packages below by deleting the '#' in lines 14-17 and running the script. 
+############# This only needs to be done the  first time the program is open on a computer. #############
 
 
 #install.packages("tidyverse")
@@ -22,14 +25,14 @@ library(nls.multstart)
 library(broom)
 
 
-############# (step 1) export spectral information from the plate reader as a csv file #############
+############# (step 1) export spectral information from the plate reader as a csv file. Ensure the only data in the csv file is the columns of raw data. All experimental summary information must be deleted. #############
 
 ############# (step 2) read raw data file, normalize all spectra to start from same absorbance value at 500 nm, and print corrected spectra #############
 
 # insert name of raw data file
-r = read.csv("2D6_day94_titrations_RT.csv")
+r = read.csv("file_name.csv")
 
-#define protein concentration
+# define protein concentration
 protein_conc <- 1
 rr = r %>% select(PlateNumber, Well, Wavelength, Result)
 r2 =  rr %>% mutate(absorbance = rr$Result) %>% select(-"Result")
@@ -51,7 +54,8 @@ for (x in 2:ncol(r4)) {
 
 write_csv(r4, "anchored.csv")
 
-############# (step 2) measure background control wells (C1, C2, P1, and P2) and water-bound P450 spectra (A1, A2, N1, and N2) for each plate in the assay  #############
+############# (step 2) measure and average the absorbance of background control wells (C1, C2, P1, and P2) and water-bound P450 spectra (A1, A2, N1, and N2) for each plate in the assay  #############
+#edit script to account for as many plates as are present in the assay
 
 baseline1 <- rowMeans(r4[, c("absorbance.1.C01", "absorbance.1.C02", "absorbance.1.P01", "absorbance.1.P02")])
 abs1 <- rowMeans(r4[, c("absorbance.1.A01", "absorbance.1.A02", "absorbance.1.N01", "absorbance.1.N02")])
@@ -60,28 +64,33 @@ baseline2 <- rowMeans(r4[, c("absorbance.2.C01", "absorbance.2.C02", "absorbance
 abs2 <- rowMeans(r4[, c("absorbance.2.A01", "absorbance.2.A02", "absorbance.2.N01", "absorbance.2.N02")])
 abs2_cor <- abs2 - baseline2
 
-#subtract average background absorbance as measured by wells C1, C2, P1, and P2 from spectra in the corresponding plate
+#subtract average background absorbance as measured by wells C1, C2, P1, and P2 from spectra in the corresponding plate to generate corrected absolute spectra
+#open the file named "anchored.csv" and determine which columns contain data for plate 1, 2, etc. Change the values in the following two lines such that they correspond
+#to the correct columns. For example, data from plate 1 is found in columns 1 - 107, so baseline_cor1 is generated from c(1:107)
+
 baseline_cor1 = r4[, c(1:107)] - baseline1
 baseline_cor2 = r4[, c(108:467)] - baseline2
 
-#subtract average water-bound P450 absorbance as measured by wells A1, A2, N1, and N2 from spectra in the corresponding plate
+#subtract average water-bound P450 absorbance as measured by wells A1, A2, N1, and N2 from spectra in the corresponding plate to generate corrected difference spectra
+#ensure that the values below reflect the correct size of each file. for example, baseline_cor1 contains 107 columns, so c(1:107).
+
 baseline_cor1_d = baseline_cor1[, c(1:107)] - abs1_cor
 baseline_cor2_d = baseline_cor2[, c(1:360)] - abs2_cor
 
 #print all corrected absolute spectra
-abs <- cbind(baseline_cor2, baseline_cor3, baseline_cor4) %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength)
+abs <- cbind(baseline_cor1, baseline_cor2) %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength)
 write_csv(abs, "abs.csv")
 
 #print all corrected difference spectra
-dif <- cbind(baseline_cor2_d, baseline_cor3_d, baseline_cor4_d) %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength)
+dif <- cbind(baseline_cor1_d, baseline_cor2_d) %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength)
 write_csv(dif, "dif.csv")
 
-#edit script to account for as many plates as are present in the assay
 
 
 ############# (step 2) print corrected water-bound P450 spectra for each plate to visually ensure quality of data ############# 
 
 #qc plate 1
+dir.create("qc")
 baseline1_qc <- data.frame(baseline1)
 baseline1_qc1 <- baseline1_qc %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength)
 abs1_qc_temp <- data.frame(abs1)
@@ -114,38 +123,40 @@ ggplot(abs1_qc) +
 ggsave(plot = last_plot(), filename = paste0("DMSO_control1.jpeg"), device = "jpeg", path = "qc",
        width = 6, height = 3, units = "in", dpi = 320)
 
+
+######## comparison of all four baselines from the same plate to ensure baseline is not changing over the course of the assay ########
 plate1_A1 <- (r4[, c("absorbance.1.A01")])
 plate1_A2 <- (r4[, c("absorbance.1.A02")])
 plate1_N1 <- (r4[, c("absorbance.1.N01")])
 plate1_N2 <- (r4[, c("absorbance.1.N02")])
 
-A1_temp <- data.frame(plate1_A1)
-A1 <- A1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = A1)
-colnames(A1)[colnames(A1) == "A1"] <- "Absorbance"
-A2_temp <- data.frame(plate1_A2)
-A2 <- A2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = A2)
-colnames(A2)[colnames(A2) == "A2"] <- "Absorbance"
-N1_temp <- data.frame(plate1_N1)
-N1 <- N1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = N1)
-colnames(N1)[colnames(N1) == "N1"] <- "Absorbance"
-N2_temp <- data.frame(plate1_N2)
-N2 <- N2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = N2)
-colnames(N2)[colnames(N2) == "N2"] <- "Absorbance"
-control_comparison <- rbind(A1, A2, N1, N2)
+A1_p1_temp <- data.frame(plate1_A1)
+A1_p1 <- A1_p1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = 'A1p1')
+colnames(A1_p1)[colnames(A1_p1) == "plate1_A1"] <- "Absorbance"
+A2_p1_temp <- data.frame(plate1_A2)
+A2_p1 <- A2_p1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = 'A2p1')
+colnames(A2_p1)[colnames(A2_p1) == "plate1_A2"] <- "Absorbance"
+N1_p1_temp <- data.frame(plate1_N1)
+N1_p1 <- N1_p1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = 'N1p1')
+colnames(N1_p1)[colnames(N1_p1) == "plate1_N1"] <- "Absorbance"
+N2_p1_temp <- data.frame(plate1_N2)
+N2_p1 <- N2_p1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = 'N2p1')
+colnames(N2_p1)[colnames(N2_p1) == "plate1_N2"] <- "Absorbance"
+control_comparison1 <- rbind(A1_p1, A2_p1, N1_p1, N2_p1)
 
-ggplot(control_comparison) + 
-  geom_line(aes(x = wavelength, y = Absorbance)) + xlim(350, 500) +
+ggplot(control_comparison1) + 
+  geom_line(aes(x = wavelength, y = Absorbance, color = plate, group = plate)) + xlim(350, 500) +
   ggtitle("control comparison") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
-                                            panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+                                                     panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
   geom_vline(xintercept = 393, linetype = "dotted", color = "blue") +
   geom_vline(xintercept = 418, linetype = "dotted") +
   geom_vline(xintercept = 424, linetype = "dotted", color = "red")
 
-ggsave(plot = last_plot(), filename = paste0("control_comparison.jpeg"), device = "jpeg", path = "qc",
+ggsave(plot = last_plot(), filename = paste0("control_comparison1.jpeg"), device = "jpeg", path = "qc",
        width = 6, height = 3, units = "in", dpi = 320)
 
+
 #qc plate 2
-dir.create("qc")
 baseline2_qc <- data.frame(baseline2)
 baseline2_qc2 <- baseline2_qc %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength)
 abs2_qc_temp <- data.frame(abs2)
@@ -183,29 +194,29 @@ plate2_A2 <- (r4[, c("absorbance.2.A02")])
 plate2_N1 <- (r4[, c("absorbance.2.N01")])
 plate2_N2 <- (r4[, c("absorbance.2.N02")])
 
-A1_temp <- data.frame(plate2_A1)
-A1 <- A1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = A1)
-colnames(A1)[colnames(A1) == "A1"] <- "Absorbance"
-A2_temp <- data.frame(plate2_A2)
-A2 <- A2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = A2)
-colnames(A2)[colnames(A2) == "A2"] <- "Absorbance"
-N1_temp <- data.frame(plate2_N1)
-N1 <- N1_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = N1)
-colnames(N1)[colnames(N1) == "N1"] <- "Absorbance"
-N2_temp <- data.frame(plate2_N2)
-N2 <- N2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = N2)
-colnames(N2)[colnames(N2) == "N2"] <- "Absorbance"
-control_comparison_plate2 <- rbind(A1, A2, N1, N2)
+A1_p2_temp <- data.frame(plate2_A1)
+A1_p2 <- A1_p2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = 'A1_p2')
+colnames(A1_p2)[colnames(A1_p2) == "plate2_A1"] <- "Absorbance"
+A2_p2_temp <- data.frame(plate2_A2)
+A2_p2 <- A2_p2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = 'A2_p2')
+colnames(A2_p2)[colnames(A2_p2) == "plate2_A2"] <- "Absorbance"
+N1_p2_temp <- data.frame(plate2_N1)
+N1_p2 <- N1_p2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = 'N1_p2')
+colnames(N1_p2)[colnames(N1_p2) == "plate2_N1"] <- "Absorbance"
+N2_p2_temp <- data.frame(plate2_N2)
+N2_p2 <- N2_p2_temp %>% mutate(wavelength = seq(350,500,0.5)) %>% relocate(wavelength) %>% mutate (plate = 'N2_p2')
+colnames(N2_p2)[colnames(N2_p2) == "plate2_N2"] <- "Absorbance"
+control_comparison2 <- rbind(A1_p2, A2_p2, N1_p2, N2_p2)
 
-ggplot(control_comparison_plate2) + 
-  geom_line(aes(x = wavelength, y = Absorbance)) + xlim(350, 500) +
+ggplot(control_comparison2) + 
+  geom_line(aes(x = wavelength, y = Absorbance, color = plate, group = plate)) + xlim(350, 500) +
   ggtitle("control comparison") + theme_bw() + theme(panel.border = element_blank(), panel.grid.major = element_blank(),
-                                            panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
+                                                     panel.grid.minor = element_blank(), axis.line = element_line(colour = "black")) +
   geom_vline(xintercept = 393, linetype = "dotted", color = "blue") +
   geom_vline(xintercept = 418, linetype = "dotted") +
   geom_vline(xintercept = 424, linetype = "dotted", color = "red")
 
-ggsave(plot = last_plot(), filename = paste0("control_comparison_plate2.jpeg"), device = "jpeg", path = "qc",
+ggsave(plot = last_plot(), filename = paste0("control_comparison2.jpeg"), device = "jpeg", path = "qc",
        width = 6, height = 3, units = "in", dpi = 320)
 
 #edit script to account for as many plates as are present in the assay
@@ -215,7 +226,7 @@ ggsave(plot = last_plot(), filename = paste0("control_comparison_plate2.jpeg"), 
 
 absolute_spectra <- abs %>% select(-contains("wavelength")) %>% select(-contains("01")) %>% select(-contains("02"))
 
-# define the number of titration points per assay
+# define the number of titration points per assay. It must be the same number for all titrations.
 num_titration_points <- 11
 
 for (i in 1:(ncol(absolute_spectra)/num_titration_points)) {
@@ -236,6 +247,8 @@ u <- unique(final_abs$Short.Titration)
 dir.create("absolute")
 abs_DMSO <- rowMeans(abs[, c("absorbance.1.A01", "absorbance.1.A02", "absorbance.1.N01", "absorbance.1.N02")])
 abs_DMSO_plot <- data.frame(ID="absorbance.1.DMSO", Absorbance = abs_DMSO, Short.Titration = "x")
+#generate a csv file containing a list of the compound names in the order that they were run on the plate (compound in A3-A13, A14-A24, B3-B13, etc). insert the name of the file below to be read into R. 
+#names must not contain special characters or spaces. replace all spaces with "_" and ensure all names contain a dash after the source well (ex. A1-efinaconazole)
 compound_key <- read.csv("compound_key_titration_RT.csv")
 
 for (i in 1:length(u)) {
@@ -296,13 +309,13 @@ for (i in 1:length(u)) {
 ############# read in appropriate compound concentrations for each assay ############# 
 
 #read in file containing compound codes or names and concentrations in each well
-table_with_conc <- read.csv("240325_2D6 day 60_with_concentrations_RT.csv")
+table_with_conc <- read.csv("file_name.csv")
 compound_conc <- data.frame(matrix(nrow = 12, ncol = 0))
 for (i in 1:nrow(compound_key)) {
   compound_code <- strsplit(compound_key[i,1],"-")[[1]][1]
   # compound codes are the well ID for the master library - ensure no compounds codes loaded for secondary plates
   # must only use each compound code once
-  # the script is reading the titles of the columns - if the titles of the columns are changed in the csv file, ensure that they are properly reflected in the script
+  #if one changes the headers to the ECHO template file, you may need to change them below in order to read in the concentrations
   compound_conc[[compound_key[i,1]]] <- c(subset(table_with_conc, `source.well` == compound_code )$`actual..ligand.`, 0)
 }
 
@@ -322,7 +335,8 @@ Kds <- data.frame(Compounds = compound_key,
                   AIC = NA,
                   BIC = NA,
                   peak = NA, 
-                  trough = NA)
+                  trough = NA,
+                  shift = NA)
 results <- list()
 
 #group difference spectra for each assay and identify maximum and minimum absorbance values for highest concentration of compound
@@ -343,6 +357,11 @@ for (i in 1:(ncol(difference_spectra)/num_titration_points)) {
   trough_nm <- peak_trough_temp$wavelength[which.min(peak_trough_temp[,5])]
   Kds[i,"peak"] <- peak_nm
   Kds[i,"trough"] <- trough_nm
+  
+  #if the maximum ∆Amax is greater than .004, the code considers it a shift. All spectra need to be observed to determine if a shift is actually occurring.
+  if (max(dA_final) > .004) {
+    Kds[i,"shift"] <- "yes"
+  } 
   
   binding_curve1 <- data.frame(concentration = compound_conc[[compound_key[i,1]]], values = dA_final)
   
@@ -414,7 +433,7 @@ for (i in 1:(ncol(difference_spectra)/num_titration_points)) {
   
 }
 
-#print a file containing the Kd with upper and lower confidence intervals, Amax with upper and lower confidence intervals, AIC, BIC, and wavelength 
+#print a file containing the Kd with upper and lower confidence intervals, Amax with upper and lower confidence intervals, AIC, BIC, whether or not a shift occurred, and wavelength 
 #of the peak and trough absorbance values for each compound
 write_csv(Kds, "Kd_Amax_values.csv")
 
@@ -433,7 +452,8 @@ Kds_tb <- data.frame(Compounds = compound_key,
                   AIC = NA,
                   BIC = NA,
                   peak = NA, 
-                  trough = NA)
+                  trough = NA,
+                  shift = NA)
 results_tb <- list()
 
 
@@ -459,6 +479,10 @@ for (i in 1:(ncol(difference_spectra)/num_titration_points)) {
   trough_nm <- peak_trough_temp$wavelength[which.min(peak_trough_temp[,5])]
   Kds_tb[i,"peak"] <- peak_nm
   Kds_tb[i,"trough"] <- trough_nm
+  
+  if (max(dA_final) > .004) {
+    Kds[i,"shift"] <- "yes"
+  } 
   
   binding_curve1 <- data.frame(concentration = compound_conc[[compound_key[i,1]]], values = dA_final)
   
@@ -527,7 +551,7 @@ for (i in 1:(ncol(difference_spectra)/num_titration_points)) {
   
 }
 
-#print a file containing the Kd with upper and lower confidence intervals, Amax with upper and lower confidence intervals, AIC, BIC, and wavelength 
+#print a file containing the Kd with upper and lower confidence intervals, Amax with upper and lower confidence intervals, AIC, BIC, whether or not a shift occurred, and wavelength 
 #of the peak and trough absorbance values for each compound
 write_csv(Kds_tb, "Kd_Amax_values_tight_binding.csv")
 
